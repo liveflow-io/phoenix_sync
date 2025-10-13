@@ -84,12 +84,16 @@ defmodule Phoenix.Sync.Controller do
                         )
 
       def sync_render(conn, shape_fun) when is_function(shape_fun, 0) do
+        conn = Plug.Conn.fetch_query_params(conn)
+
         conn
         |> Phoenix.Sync.Controller.configure_plug_conn!(@plug_assign_opts)
         |> Phoenix.Sync.Controller.sync_render(conn.params, shape_fun)
       end
 
       def sync_render(conn, shape, shape_opts \\ []) do
+        conn = Plug.Conn.fetch_query_params(conn)
+
         conn
         |> Phoenix.Sync.Controller.configure_plug_conn!(@plug_assign_opts)
         |> Phoenix.Sync.Controller.sync_render(conn.params, shape, shape_opts)
@@ -248,7 +252,7 @@ defmodule Phoenix.Sync.Controller do
 
         {:ok, pid} =
           Task.start_link(fn ->
-            send(parent, {:response, self(), Adapter.PlugApi.call(shape_api, conn, params)})
+            send(parent, {:response, self(), Adapter.PlugApi.response(shape_api, conn, params)})
           end)
 
         ref = Process.monitor(pid)
@@ -270,10 +274,10 @@ defmodule Phoenix.Sync.Controller do
 
             interruptible_call(conn, api, params, shape_fun)
 
-          {:response, ^pid, conn} ->
+          {:response, ^pid, response} ->
             Process.demonitor(ref, [:flush])
 
-            conn
+            Adapter.PlugApi.send_response(shape_api, conn, response)
 
           {:DOWN, ^ref, :process, _pid, reason} ->
             Plug.Conn.send_resp(conn, 500, inspect(reason))
