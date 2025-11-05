@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2025-11-05
+
+### Changed
+
+- Bump allowed `electric` to version `1.2.2` [#103](https://github.com/electric-sql/phoenix_sync/pull/116)
+
 ## [0.6.1] - 2025-10-13
 
 ### Fixed

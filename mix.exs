@@ -2,8 +2,8 @@ defmodule Phoenix.Sync.MixProject do
   use Mix.Project
 
   # Remember to update the README when you change the version
-  @version "0.6.1"
-  @electric_version ">= 1.1.9 and <= 1.1.10"
+  @version "0.6.2"
+  @electric_version ">= 1.1.9 and <= 1.2.4"
 
   def project do
     [
