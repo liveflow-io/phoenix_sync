@@ -180,7 +180,8 @@ defmodule Phoenix.Sync.SandboxTest do
       assert [
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "one"}},
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "two"}},
-               %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}}
+               %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}},
+               %{"headers" => %{"control" => "snapshot-end"}}
              ] = Jason.decode!(resp.resp_body)
     end
 
@@ -237,7 +238,8 @@ defmodule Phoenix.Sync.SandboxTest do
       assert [
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "one"}},
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "two"}},
-               %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}}
+               %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}},
+               %{"headers" => %{"control" => "snapshot-end"}}
              ] = snapshot
 
       send(task1.pid, :request)
@@ -267,7 +269,8 @@ defmodule Phoenix.Sync.SandboxTest do
       assert [
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "one"}},
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "two"}},
-               %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}}
+               %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}},
+               %{"headers" => %{"control" => "snapshot-end"}}
              ] = Jason.decode!(resp.resp_body)
     end
 
@@ -325,7 +328,8 @@ defmodule Phoenix.Sync.SandboxTest do
       assert [
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "one"}},
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "two"}},
-               %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}}
+               %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}},
+               %{"headers" => %{"control" => "snapshot-end"}}
              ] = snapshot
 
       send(task1.pid, :request)

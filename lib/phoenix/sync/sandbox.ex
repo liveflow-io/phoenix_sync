@@ -259,7 +259,11 @@ if Phoenix.Sync.sandbox_enabled?() do
           # mark the stack as ready
           Electric.StatusMonitor.mark_pg_lock_acquired(stack_id, owner)
           Electric.StatusMonitor.mark_replication_client_ready(stack_id, owner)
-          Electric.StatusMonitor.mark_connection_pool_ready(stack_id, owner)
+          Electric.StatusMonitor.mark_connection_pool_ready(stack_id, :admin, owner)
+          Electric.StatusMonitor.mark_connection_pool_ready(stack_id, :snapshot, owner)
+          Electric.StatusMonitor.mark_integrety_checks_passed(stack_id, owner)
+          Electric.StatusMonitor.mark_shape_log_collector_ready(stack_id, owner)
+          Electric.StatusMonitor.mark_supervisor_processes_ready(stack_id, owner)
 
           api_config = Sandbox.Stack.config(stack_id, repo)
           api = Electric.Application.api(api_config)
@@ -292,7 +296,7 @@ if Phoenix.Sync.sandbox_enabled?() do
     defp generate_stack_id(opts) do
       tags = Keyword.get(opts, :tags, %{})
       # with parameterised tests the same file:line can be running simultaneously
-      uid = System.unique_integer() |> to_string()
+      uid = System.unique_integer([:monotonic]) |> to_string()
 
       suffix =
         case Map.fetch(tags, :line) do
