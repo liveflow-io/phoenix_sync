@@ -135,7 +135,6 @@ if Phoenix.Sync.sandbox_enabled?() do
         Storage.stack_child_spec(storage),
         {Electric.ShapeCache.ShapeStatusOwner, stack_id: stack_id, storage: storage},
         {Electric.StatusMonitor, stack_id: stack_id},
-        {Electric.Shapes.Monitor, stack_id: stack_id, storage: storage},
         {Sandbox.Inspector, stack_id: stack_id, repo: repo},
         {Sandbox.Producer, stack_id: stack_id},
         {DynamicSupervisor,
@@ -145,7 +144,8 @@ if Phoenix.Sync.sandbox_enabled?() do
             Electric.Shapes.Supervisor,
             stack_id: stack_id,
             consumer_supervisor: {Electric.Shapes.DynamicConsumerSupervisor, stack_id: stack_id},
-            shape_cleaner: {Electric.ShapeCache.ShapeCleaner, stack_id: stack_id},
+            shape_cleaner:
+              {Electric.ShapeCache.ShapeCleaner.CleanupTaskSupervisor, stack_id: stack_id},
             shape_cache: shape_cache_spec,
             publication_manager: config[:publication_manager],
             log_collector: {
