@@ -86,16 +86,17 @@ if Phoenix.Sync.sandbox_enabled?() do
         %{stack_id: stack_id, table_base_name: :"#{stack_id}"}
       }
 
+      shape_status_config =
+        struct!(Electric.ShapeCache.ShapeStatus,
+          shape_meta_table: Electric.ShapeCache.ShapeStatus.shape_meta_table(stack_id),
+          storage: storage
+        )
+
       [
         purge_all_shapes?: false,
         stack_id: stack_id,
         storage: storage,
-        shape_status:
-          {Electric.ShapeCache.ShapeStatus,
-           Electric.ShapeCache.ShapeStatus.opts(
-             shape_meta_table: Electric.ShapeCache.ShapeStatus.shape_meta_table(stack_id),
-             storage: storage
-           )},
+        shape_status: {Electric.ShapeCache.ShapeStatus, shape_status_config},
         inspector: inspector,
         publication_manager: publication_manager_spec,
         chunk_bytes_threshold: 10_485_760,

@@ -150,7 +150,7 @@ if Code.ensure_loaded?(Electric.Shapes.Api) do
       end
     end
 
-    def send_response(%ApiAdapter{}, conn, {request, response}) do
+    def send_response(_api, conn, {request, response}) do
       conn
       |> content_type()
       |> Plug.Conn.assign(:request, request)

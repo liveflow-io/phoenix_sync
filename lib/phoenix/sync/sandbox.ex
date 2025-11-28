@@ -259,7 +259,7 @@ if Phoenix.Sync.sandbox_enabled?() do
           # mark the stack as ready
           Electric.StatusMonitor.mark_pg_lock_acquired(stack_id, owner)
           Electric.StatusMonitor.mark_replication_client_ready(stack_id, owner)
-          Electric.StatusMonitor.mark_connection_pool_ready(stack_id, owner)
+          mark_connection_pool_ready(stack_id, owner)
 
           api_config = Sandbox.Stack.config(stack_id, repo)
           api = Electric.Application.api(api_config)
@@ -474,6 +474,15 @@ if Phoenix.Sync.sandbox_enabled?() do
           raise RuntimeError,
                 "Repo #{inspect(repo)} is not using the Phoenix.Sync.Sandbox.Postgres adapter. Please ensure you have configured your repo to use the sandbox adapter."
         end
+      end
+    end
+
+    # Handle both Electric API versions - older uses /2, newer uses /3
+    defp mark_connection_pool_ready(stack_id, owner) do
+      if function_exported?(Electric.StatusMonitor, :mark_connection_pool_ready, 3) do
+        apply(Electric.StatusMonitor, :mark_connection_pool_ready, [stack_id, owner, 1])
+      else
+        apply(Electric.StatusMonitor, :mark_connection_pool_ready, [stack_id, owner])
       end
     end
   end

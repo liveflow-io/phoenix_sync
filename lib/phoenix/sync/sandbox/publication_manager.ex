@@ -56,5 +56,9 @@ if Phoenix.Sync.sandbox_enabled?() do
     def refresh_publication(_opts) do
       :ok
     end
+
+    def wait_for_restore(_opts) do
+      :ok
+    end
   end
 end
