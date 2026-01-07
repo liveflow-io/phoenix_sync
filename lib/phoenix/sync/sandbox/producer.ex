@@ -3,7 +3,8 @@ if Phoenix.Sync.sandbox_enabled?() do
     @moduledoc false
 
     alias Electric.Replication.Changes.{
-      Transaction,
+      Begin,
+      Commit,
       NewRecord,
       UpdatedRecord,
       DeletedRecord,
@@ -50,6 +51,12 @@ if Phoenix.Sync.sandbox_enabled?() do
 
     def init(stack_id) do
       state = %{txid: 10000, stack_id: stack_id}
+
+      Electric.LsnTracker.set_last_processed_lsn(
+        stack_id,
+        Electric.Postgres.Lsn.from_integer(0)
+      )
+
       {:ok, state}
     end
 
@@ -62,7 +69,7 @@ if Phoenix.Sync.sandbox_enabled?() do
       :ok =
         txid
         |> transaction(msgs)
-        |> ShapeLogCollector.store_transaction(ShapeLogCollector.name(stack_id))
+        |> ShapeLogCollector.handle_operations(ShapeLogCollector.name(stack_id))
 
       {:noreply, %{state | txid: next_txid}}
     end
@@ -73,21 +80,20 @@ if Phoenix.Sync.sandbox_enabled?() do
       :ok =
         state.txid
         |> transaction(changes)
-        |> ShapeLogCollector.store_transaction(ShapeLogCollector.name(state.stack_id))
+        |> ShapeLogCollector.handle_operations(ShapeLogCollector.name(state.stack_id))
 
       {:noreply, %{state | txid: state.txid + 100}}
     end
 
     defp transaction(txid, changes) do
-      %Transaction{
-        xid: txid,
-        lsn: Electric.Postgres.Lsn.from_integer(txid),
-        last_log_offset: Enum.at(changes, -1) |> Map.fetch!(:log_offset),
-        changes: changes,
-        num_changes: length(changes),
-        commit_timestamp: DateTime.utc_now(),
-        affected_relations: Enum.into(changes, MapSet.new(), & &1.relation)
-      }
+      [%Begin{xid: txid} | changes] ++
+        [
+          %Commit{
+            lsn: Electric.Postgres.Lsn.from_integer(txid),
+            transaction_size: 100,
+            commit_timestamp: DateTime.utc_now()
+          }
+        ]
     end
 
     defp msg_from_change({{:insert, schema_meta, values}, i}, lsn, txid) do

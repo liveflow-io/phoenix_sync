@@ -136,7 +136,6 @@ if Phoenix.Sync.sandbox_enabled?() do
         {Electric.ShapeCache.ShapeStatusOwner, stack_id: stack_id, storage: storage},
         {Electric.StatusMonitor, stack_id: stack_id},
         {Sandbox.Inspector, stack_id: stack_id, repo: repo},
-        {Sandbox.Producer, stack_id: stack_id},
         {DynamicSupervisor,
          name: Phoenix.Sync.Sandbox.Fetch.name(stack_id), strategy: :one_for_one},
         Supervisor.child_spec(
@@ -156,7 +155,8 @@ if Phoenix.Sync.sandbox_enabled?() do
             expiry_manager: {Phoenix.Sync.Sandbox.ExpiryManager, stack_id: stack_id}
           },
           restart: :temporary
-        )
+        ),
+        {Sandbox.Producer, stack_id: stack_id}
       ]
 
       Supervisor.init(children, strategy: :one_for_one)
