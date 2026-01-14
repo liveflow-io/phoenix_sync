@@ -63,6 +63,10 @@ if Phoenix.Sync.sandbox_enabled?() do
     def init(args) do
       {:ok, stack_id} = Keyword.fetch(args, :stack_id)
       {:ok, repo} = Keyword.fetch(args, :repo)
+      {:ok, owner} = Keyword.fetch(args, :owner)
+
+      # give the inspector access to the sandboxed connection
+      Ecto.Adapters.SQL.Sandbox.allow(repo, owner, self())
 
       {:ok,
        %{

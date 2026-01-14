@@ -7,5 +7,5 @@ defmodule Phoenix.Sync.Sandbox.ExpiryManager do
 
   def init(_) do
     {:ok, []}
-    end
+  end
 end

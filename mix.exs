@@ -4,7 +4,7 @@ defmodule Phoenix.Sync.MixProject do
   # Remember to update the README when you change the version
   @version "0.6.1"
   # @electric_version ">= 1.1.9 and <= 1.1.10"
-  @electric_version "~> 1.2.6"
+  @electric_version "~> 1.2.4"
 
   def project do
     [
@@ -48,6 +48,12 @@ defmodule Phoenix.Sync.MixProject do
       {:ecto_sql, "~> 3.10", optional: true},
       # {:electric, @electric_version, optional: true},
       {:electric, path: "../electric-main/packages/sync-service", override: true, optional: true},
+      # {:electric,
+      #  github: "electric-sql/electric",
+      #  sparse: "packages/sync-service",
+      #  ref: "1e51dd3857479e4c55eff22cc14dc1e0ac65dd78",
+      #  override: true,
+      #  optional: true},
       {:electric_client, "~> 0.8.0-beta-1"},
       {:igniter, "~> 0.6", optional: true}
     ] ++ deps_for_env(Mix.env()) ++ json_deps()

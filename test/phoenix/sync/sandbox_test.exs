@@ -205,7 +205,7 @@ defmodule Phoenix.Sync.SandboxTest do
             Phoenix.ConnTest.build_conn()
             |> Phoenix.ConnTest.get("/sync/todos", %{offset: offset, handle: handle})
 
-          assert [%{"headers" => %{"control" => "up-to-date", "global_last_seen_lsn" => "0"}}] =
+          assert [%{"headers" => %{"control" => "up-to-date", "global_last_seen_lsn" => "10200"}}] =
                    Jason.decode!(resp.resp_body)
 
           [offset] = Plug.Conn.get_resp_header(resp, "electric-offset")
@@ -295,7 +295,7 @@ defmodule Phoenix.Sync.SandboxTest do
             Phoenix.ConnTest.build_conn()
             |> Phoenix.ConnTest.get(path, %{offset: offset, handle: handle})
 
-          assert [%{"headers" => %{"control" => "up-to-date", "global_last_seen_lsn" => "0"}}] =
+          assert [%{"headers" => %{"control" => "up-to-date", "global_last_seen_lsn" => "10200"}}] =
                    Jason.decode!(resp.resp_body)
 
           [offset] = Plug.Conn.get_resp_header(resp, "electric-offset")
