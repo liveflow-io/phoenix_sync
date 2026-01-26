@@ -200,15 +200,7 @@ if Phoenix.Sync.sandbox_enabled?() do
           restart: :temporary
         ),
         {Sandbox.Producer, stack_id: stack_id},
-        {Agent,
-         fn ->
-           :ok = Electric.ShapeCache.ShapeStatusOwner.initialize(stack_id)
-
-           Electric.LsnTracker.set_last_processed_lsn(
-             stack_id,
-             Electric.Postgres.Lsn.from_integer(0)
-           )
-         end}
+        {Sandbox.InitializeStack, stack_id: stack_id}
       ]
 
       Supervisor.init(children, strategy: :one_for_one)

@@ -98,7 +98,6 @@ defmodule Phoenix.Sync.SandboxTest do
       |> live("/stream/sandbox")
 
     assert_receive {:sync, {:todos, :loaded}}
-    assert_receive {:sync, {:todos, :live}}
 
     for todo <- Repo.all(Todo) do
       assert html =~ todo.title
@@ -106,7 +105,7 @@ defmodule Phoenix.Sync.SandboxTest do
 
     Repo.insert!(%Todo{title: "fourth", completed: false})
 
-    assert_receive {:sync, _event}
+    assert_receive {:sync, {:todos, :live}}
 
     assert render(lv) =~ "fourth"
   end
