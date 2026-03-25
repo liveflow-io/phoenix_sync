@@ -595,7 +595,9 @@ defmodule Phoenix.Sync.Electric do
   end
 
   @subset_body_keys ~w(where order_by limit offset params where_expr order_by_expr)
-  @subset_body_keys_fallback ~w(where order_by limit params where_expr order_by_expr)
+  # In flattened POST params, root offset may be the stream cursor, so treat offset
+  # as subset-only only when we can reliably separate query/body params.
+  @subset_body_keys_without_offset @subset_body_keys -- ["offset"]
 
   @doc false
   def normalize_subset_params(params, method \\ "GET")
@@ -657,7 +659,7 @@ defmodule Phoenix.Sync.Electric do
        when method in ["POST", :post] and is_map(params) do
     {subset_body_params, rest} =
       Enum.reduce(params, {%{}, %{}}, fn {key, value}, {subset_acc, rest_acc} ->
-        case subset_body_param_name(key, fallback?: true) do
+        case subset_body_param_name(key, preserve_stream_offset?: true) do
           {:ok, subset_key} ->
             {Map.put(subset_acc, subset_key, value), rest_acc}
 
@@ -699,8 +701,8 @@ defmodule Phoenix.Sync.Electric do
 
   defp subset_body_param_name(key, opts) when is_binary(key) do
     keys =
-      if opts[:fallback?],
-        do: @subset_body_keys_fallback,
+      if opts[:preserve_stream_offset?],
+        do: @subset_body_keys_without_offset,
         else: @subset_body_keys
 
     if key in keys, do: {:ok, key}, else: :error
