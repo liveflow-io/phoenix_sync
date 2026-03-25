@@ -8,6 +8,21 @@ defmodule Phoenix.Sync.Electric.ClientAdapter do
 
     alias Phoenix.Sync.PredefinedShape
 
+    @protocol_passthrough_keys ~w(
+      expired_handle
+      live_sse
+      experimental_live_sse
+      log
+      cache-buster
+      subset__where
+      subset__limit
+      subset__offset
+      subset__order_by
+      subset__params
+      subset__where_expr
+      subset__order_by_expr
+    )
+
     def predefined_shape(sync_client, %PredefinedShape{} = predefined_shape) do
       shape_client = PredefinedShape.client(sync_client.client, predefined_shape)
 
@@ -48,7 +63,7 @@ defmodule Phoenix.Sync.Electric.ClientAdapter do
           shape_handle: params["handle"],
           live: live?(params["live"]),
           next_cursor: params["cursor"],
-          params: subset_request_params(params)
+          params: protocol_request_params(params)
         ),
         shape
       }
@@ -69,8 +84,15 @@ defmodule Phoenix.Sync.Electric.ClientAdapter do
     defp normalise_method(method), do: method |> String.downcase() |> String.to_atom()
     defp live?(live), do: live == "true"
 
-    defp subset_request_params(params),
-      do: Map.filter(params, fn {key, _} -> String.starts_with?(key, "subset__") end)
+    defp protocol_request_params(params) do
+      params
+      |> stringify_keys()
+      |> Map.take(@protocol_passthrough_keys)
+    end
+
+    defp stringify_keys(params) do
+      Map.new(params, fn {key, value} -> {to_string(key), value} end)
+    end
 
     defp fetch_upstream(sync_client, conn, request, shape) do
       response = make_request(sync_client, conn, request, shape)
