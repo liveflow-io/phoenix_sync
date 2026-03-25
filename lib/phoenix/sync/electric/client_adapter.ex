@@ -8,19 +8,22 @@ defmodule Phoenix.Sync.Electric.ClientAdapter do
 
     alias Phoenix.Sync.PredefinedShape
 
-    @protocol_passthrough_keys ~w(
-      expired_handle
-      live_sse
-      experimental_live_sse
-      log
-      cache-buster
-      subset__where
-      subset__limit
-      subset__offset
-      subset__order_by
-      subset__params
-      subset__where_expr
-      subset__order_by_expr
+    # Predefined-shape routes must not allow overriding server-defined shape
+    # attributes or stream-position keys (which are passed via dedicated fields).
+    @blocked_passthrough_keys ~w(
+      table
+      where
+      columns
+      params
+      replica
+      where_expr
+      order_by_expr
+      order_by
+      limit
+      offset
+      handle
+      live
+      cursor
     )
 
     def predefined_shape(sync_client, %PredefinedShape{} = predefined_shape) do
@@ -52,7 +55,7 @@ defmodule Phoenix.Sync.Electric.ClientAdapter do
     end
 
     # this is the server-defined shape route, so we want to only pass on the
-    # per-request/stream position params and subset query params, leaving
+    # per-request/stream position params and protocol-level params, leaving
     # the shape-definition params from the configured client.
     defp request(%{shape_definition: %PredefinedShape{} = shape} = sync_client, _conn, params) do
       {
@@ -63,7 +66,7 @@ defmodule Phoenix.Sync.Electric.ClientAdapter do
           shape_handle: params["handle"],
           live: live?(params["live"]),
           next_cursor: params["cursor"],
-          params: protocol_request_params(params)
+          params: protocol_request_params(sync_client, params)
         ),
         shape
       }
@@ -84,10 +87,15 @@ defmodule Phoenix.Sync.Electric.ClientAdapter do
     defp normalise_method(method), do: method |> String.downcase() |> String.to_atom()
     defp live?(live), do: live == "true"
 
-    defp protocol_request_params(params) do
+    defp protocol_request_params(%{client: %{params: client_params}}, params) do
+      client_param_keys =
+        client_params
+        |> stringify_keys()
+        |> Map.keys()
+
       params
       |> stringify_keys()
-      |> Map.take(@protocol_passthrough_keys)
+      |> Map.drop(@blocked_passthrough_keys ++ client_param_keys)
     end
 
     defp stringify_keys(params) do
