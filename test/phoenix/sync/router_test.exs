@@ -178,6 +178,26 @@ defmodule Phoenix.Sync.RouterTest do
              ] = Jason.decode!(resp.resp_body)
     end
 
+    test "accepts subset__ query params for predefined shapes", _ctx do
+      resp =
+        Phoenix.ConnTest.build_conn()
+        |> Phoenix.ConnTest.get("/sync/todos", %{
+          offset: "-1",
+          subset__where: ~s|completed = $1|,
+          subset__params: %{"1" => "false"}
+        })
+
+      assert resp.status == 200
+
+      titles =
+        resp.resp_body
+        |> Jason.decode!()
+        |> Enum.filter(&(get_in(&1, ["headers", "operation"]) == "insert"))
+        |> Enum.map(&get_in(&1, ["value", "title"]))
+
+      assert titles == ["one", "two"]
+    end
+
     @tag table: {
            "todos",
            [
