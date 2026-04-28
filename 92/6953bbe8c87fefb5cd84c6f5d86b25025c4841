@@ -1,0 +1,20 @@
+lib/phoenix/sync/sandbox/stack.ex
+  h_a079980f71aa83 179-180,183
+mix.exs
+  h_a079980f71aa83 6,49
+lib/phoenix/sync/sandbox.ex
+  h_a079980f71aa83 264
+lib/phoenix/sync/sandbox/initialize_stack.ex
+  h_a079980f71aa83 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "926953bbe8c87fefb5cd84c6f5d86b25025c4841",
+  "prompts": {},
+  "humans": {
+    "h_a079980f71aa83": {
+      "author": "Evan O'Brien"
+    }
+  }
+}
