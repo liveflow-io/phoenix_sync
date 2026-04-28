@@ -95,6 +95,7 @@ defmodule Phoenix.Sync.SandboxTest do
     {:ok, lv, html} =
       build_conn()
       |> put_private(:test_pid, self())
+      |> put_private(:electric_client, Phoenix.Sync.Sandbox.client!())
       |> live("/stream/sandbox")
 
     assert_receive {:sync, {:todos, :loaded}}
