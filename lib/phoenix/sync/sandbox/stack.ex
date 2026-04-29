@@ -174,10 +174,13 @@ if Phoenix.Sync.sandbox_enabled?() do
          storage_dir: config[:storage_dir],
          cleanup_interval_ms: :timer.seconds(60)},
         Storage.stack_child_spec(storage),
+        {
+          Electric.ShapeCache.ShapeStatus.ShapeDb.Supervisor,
+          shape_db_opts: [storage_dir: ":memory:", exclusive_mode: true], stack_id: stack_id
+        },
         {Electric.ShapeCache.ShapeStatusOwner, stack_id: stack_id},
         {Electric.StatusMonitor, stack_id: stack_id},
-        {Electric.ShapeCache.ShapeStatus.ShapeDb.Supervisor,
-         Keyword.take(config, [:stack_id, :storage_dir])},
+        {Electric.ShapeCache.ShapeCleaner.CleanupTaskSupervisor, stack_id: stack_id},
         {Sandbox.Inspector, stack_id: stack_id, repo: repo, owner: owner},
         {DynamicSupervisor,
          name: Phoenix.Sync.Sandbox.Fetch.name(stack_id), strategy: :one_for_one},
