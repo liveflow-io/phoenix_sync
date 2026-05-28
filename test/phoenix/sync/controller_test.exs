@@ -47,6 +47,8 @@ defmodule Phoenix.Sync.ControllerTest do
       get "/transform-capture", TodoController, :transform_capture
       get "/transform-interruptible", TodoController, :transform_interruptible
       get "/transform-ecto-schema", TodoController, :transform_organization
+
+      post "/all", TodoController, :all
     end
   end
 
@@ -155,6 +157,51 @@ defmodule Phoenix.Sync.ControllerTest do
                %{"headers" => %{"operation" => "insert"}, "value" => %{"title" => "three"}},
                %{"headers" => %{"control" => "snapshot-end"}}
              ] = Jason.decode!(resp.resp_body)
+    end
+
+    test "supports POST subset snapshot requests", _ctx do
+      resp =
+        Phoenix.ConnTest.build_conn()
+        |> Plug.Conn.put_req_header("content-type", "application/json")
+        |> Phoenix.ConnTest.post(
+          "/todos/all?offset=now&log=changes_only",
+          Jason.encode!(%{
+            "where" => "id = $1",
+            "params" => %{"1" => "1"}
+          })
+        )
+
+      assert resp.status == 200, resp.resp_body
+    end
+
+    test "treats POST body offset as subset offset", _ctx do
+      resp =
+        Phoenix.ConnTest.build_conn()
+        |> Plug.Conn.put_req_header("content-type", "application/json")
+        |> Phoenix.ConnTest.post(
+          "/todos/all?offset=-1",
+          Jason.encode!(%{
+            "order_by" => "id ASC",
+            "limit" => 1,
+            "offset" => 1
+          })
+        )
+
+      assert resp.status == 200, resp.resp_body
+      assert response_titles(resp.resp_body) == ["two"]
+    end
+
+    test "supports GET subset__ query params", _ctx do
+      resp =
+        Phoenix.ConnTest.build_conn()
+        |> Phoenix.ConnTest.get("/todos/all", %{
+          "offset" => "-1",
+          "subset__where" => "id = $1",
+          "subset__params" => Jason.encode!(%{"1" => "1"})
+        })
+
+      assert resp.status == 200, resp.resp_body
+      assert response_titles(resp.resp_body) == ["one"]
     end
 
     test "allows for ecto queries", _ctx do
@@ -366,6 +413,10 @@ defmodule Phoenix.Sync.ControllerTest do
       sync_render(conn, table: "todos")
     end
 
+    post "/shape/todos" do
+      sync_render(conn, table: "todos")
+    end
+
     get "/shape/interruptible-todos" do
       sync_render(conn, fn ->
         shape_params = Agent.get(:interruptible_dynamic_agent, & &1)
@@ -417,6 +468,24 @@ defmodule Phoenix.Sync.ControllerTest do
 
       assert [expose] = Plug.Conn.get_resp_header(resp, "access-control-expose-headers")
       assert String.contains?(expose, "electric-offset")
+    end
+
+    test "supports POST subset snapshot requests", ctx do
+      conn =
+        :post
+        |> conn(
+          "/shape/todos?offset=-1",
+          Jason.encode!(%{
+            "where" => "id = $1",
+            "params" => %{"1" => "1"}
+          })
+        )
+        |> Plug.Conn.put_req_header("content-type", "application/json")
+
+      resp = PlugRouter.call(conn, PlugRouter.init(ctx.plug_opts))
+
+      assert resp.status == 200, resp.resp_body
+      assert response_titles(resp.resp_body) == ["one"]
     end
   end
 
@@ -606,6 +675,18 @@ defmodule Phoenix.Sync.ControllerTest do
       assert [%{"headers" => %{"control" => "must-refetch"}}] = Jason.decode!(response.resp_body)
 
       assert [] = ShapeRequestRegistry.registered_requests()
+    end
+  end
+
+  defp response_titles(body) do
+    case Jason.decode!(body) do
+      %{"data" => rows} ->
+        Enum.map(rows, &get_in(&1, ["value", "title"]))
+
+      rows when is_list(rows) ->
+        rows
+        |> Enum.filter(&(get_in(&1, ["headers", "operation"]) == "insert"))
+        |> Enum.map(&get_in(&1, ["value", "title"]))
     end
   end
 end

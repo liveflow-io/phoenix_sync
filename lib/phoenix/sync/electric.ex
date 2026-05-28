@@ -129,10 +129,72 @@ defmodule Phoenix.Sync.Electric do
 
   @doc false
   def serve_api(conn, api) do
-    conn = Plug.Conn.fetch_query_params(conn)
+    conn =
+      conn
+      |> Plug.Conn.fetch_query_params()
+      |> fetch_post_body_params()
 
-    Phoenix.Sync.Adapter.PlugApi.call(api, conn, conn.params)
+    if conn.halted do
+      conn
+    else
+      Phoenix.Sync.Adapter.PlugApi.call(api, conn, conn.params)
+    end
   end
+
+  @doc false
+  def fetch_post_body_params(
+        %Plug.Conn{method: "POST", body_params: %Plug.Conn.Unfetched{}} = conn
+      ) do
+    json = Phoenix.Sync.json_library()
+
+    case Plug.Conn.read_body(conn) do
+      {:ok, "", conn} ->
+        put_body_params(conn, %{})
+
+      {:ok, body, conn} ->
+        case json.decode(body) do
+          {:ok, body_params} when is_map(body_params) ->
+            put_body_params(conn, body_params)
+
+          {:ok, _} ->
+            conn
+            |> Plug.Conn.send_resp(
+              400,
+              json.encode!(%{error: "Request body must be a JSON object"})
+            )
+            |> Plug.Conn.halt()
+
+          {:error, error} ->
+            conn
+            |> Plug.Conn.send_resp(
+              400,
+              json.encode!(%{
+                error: "Invalid JSON in request body",
+                details: decode_error_message(error)
+              })
+            )
+            |> Plug.Conn.halt()
+        end
+
+      {:more, _, conn} ->
+        conn
+        |> Plug.Conn.send_resp(413, json.encode!(%{error: "Request body too large"}))
+        |> Plug.Conn.halt()
+
+      {:error, _reason} ->
+        conn
+        |> Plug.Conn.send_resp(400, json.encode!(%{error: "Failed to read request body"}))
+        |> Plug.Conn.halt()
+    end
+  end
+
+  def fetch_post_body_params(conn), do: conn
+
+  defp put_body_params(conn, body_params) do
+    %{conn | body_params: body_params, params: Map.merge(conn.params, body_params)}
+  end
+
+  defp decode_error_message(error), do: Exception.message(error)
 
   @doc false
   def valid_modes, do: @valid_modes
@@ -829,7 +891,7 @@ if Code.ensure_loaded?(Electric.Shapes.Api) do
       ApiAdapter.new(api, shape)
     end
 
-    def call(api, %{method: "GET"} = conn, params) do
+    def call(api, %{method: method} = conn, params) when method in ["GET", "POST"] do
       params = Phoenix.Sync.Electric.normalize_subset_params(conn, params)
 
       case Shapes.Api.validate(api, params) do
