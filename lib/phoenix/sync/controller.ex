@@ -84,19 +84,33 @@ defmodule Phoenix.Sync.Controller do
                         )
 
       def sync_render(conn, shape_fun) when is_function(shape_fun, 0) do
-        conn = Plug.Conn.fetch_query_params(conn)
+        conn =
+          conn
+          |> Plug.Conn.fetch_query_params()
+          |> Phoenix.Sync.Electric.fetch_post_body_params()
 
-        conn
-        |> Phoenix.Sync.Controller.configure_plug_conn!(@plug_assign_opts)
-        |> Phoenix.Sync.Controller.sync_render(conn.params, shape_fun)
+        if conn.halted do
+          conn
+        else
+          conn
+          |> Phoenix.Sync.Controller.configure_plug_conn!(@plug_assign_opts)
+          |> Phoenix.Sync.Controller.sync_render(conn.params, shape_fun)
+        end
       end
 
       def sync_render(conn, shape, shape_opts \\ []) do
-        conn = Plug.Conn.fetch_query_params(conn)
+        conn =
+          conn
+          |> Plug.Conn.fetch_query_params()
+          |> Phoenix.Sync.Electric.fetch_post_body_params()
 
-        conn
-        |> Phoenix.Sync.Controller.configure_plug_conn!(@plug_assign_opts)
-        |> Phoenix.Sync.Controller.sync_render(conn.params, shape, shape_opts)
+        if conn.halted do
+          conn
+        else
+          conn
+          |> Phoenix.Sync.Controller.configure_plug_conn!(@plug_assign_opts)
+          |> Phoenix.Sync.Controller.sync_render(conn.params, shape, shape_opts)
+        end
       end
     end
   end
@@ -197,15 +211,24 @@ defmodule Phoenix.Sync.Controller do
           (-> PredefinedShape.t() | PredefinedShape.shape())
         ) :: Plug.Conn.t()
   def sync_render(conn, params, shape_fun) when is_function(shape_fun, 0) do
-    api = configured_api!(conn)
-
-    if interruptible_call?(params) do
+    conn =
       conn
-      |> CORS.call()
-      |> interruptible_call(api, params, shape_fun)
+      |> Plug.Conn.fetch_query_params()
+      |> Phoenix.Sync.Electric.fetch_post_body_params()
+
+    if conn.halted do
+      conn
     else
-      predefined_shape = call_shape_fun(shape_fun)
-      sync_render_call(conn, api, params, predefined_shape)
+      api = configured_api!(conn)
+
+      if interruptible_call?(params) do
+        conn
+        |> CORS.call()
+        |> interruptible_call(api, params, shape_fun)
+      else
+        predefined_shape = call_shape_fun(shape_fun)
+        sync_render_call(conn, api, params, predefined_shape)
+      end
     end
   end
 
@@ -216,9 +239,18 @@ defmodule Phoenix.Sync.Controller do
   def sync_render(conn, params, shape, shape_opts \\ [])
 
   def sync_render(conn, params, shape, shape_opts) do
-    api = configured_api!(conn)
-    predefined_shape = PredefinedShape.new!(shape, shape_opts)
-    sync_render_call(conn, api, params, predefined_shape)
+    conn =
+      conn
+      |> Plug.Conn.fetch_query_params()
+      |> Phoenix.Sync.Electric.fetch_post_body_params()
+
+    if conn.halted do
+      conn
+    else
+      api = configured_api!(conn)
+      predefined_shape = PredefinedShape.new!(shape, shape_opts)
+      sync_render_call(conn, api, params, predefined_shape)
+    end
   end
 
   # The Phoenix.Controller version
