@@ -32,6 +32,9 @@ if Phoenix.Sync.sandbox_enabled?() do
     def clean(_, _), do: true
 
     @impl Electric.Postgres.Inspector
+    def reset(_), do: :ok
+
+    @impl Electric.Postgres.Inspector
     def list_relations_with_stale_cache(_), do: {:ok, []}
 
     @impl Electric.Postgres.Inspector
